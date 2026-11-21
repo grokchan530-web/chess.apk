@@ -1,65 +1,58 @@
-name: Build Android APK
+name: Build chess.apk
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
-  debug:
-    name: Build installable debug APK
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: chess-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/checkout@v4
 
-  release:
-    name: Build signed release APK
-    if: ${{ vars.RELEASE_SIGNING_ENABLED == 'true' }}
-    needs: debug
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - name: Unpack the project
+        run: unzip -q chess-project.zip && ls chess
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Test chess engine
+        working-directory: chess
+        run: node tests/perft.js && node tests/ai.js
+
+      - name: Bundle the game into the Android assets
+        working-directory: chess
+        run: node build.js
+
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-      - name: Restore private signing key
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Make sure a debug keystore exists
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/chess-release.keystore"
-      - name: Build signed release APK
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/chess-release.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: gradle --no-daemon assembleRelease
-      - name: Upload signed release APK
-        uses: actions/upload-artifact@v4
+          mkdir -p ~/.android
+          [ -f ~/.android/debug.keystore ] || keytool -genkey -v -keystore ~/.android/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
+            -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build APK
+        working-directory: chess/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Collect chess.apk
+        run: |
+          APK=$(find chess/android/app/build/outputs/apk -name '*.apk' | head -n 1)
+          echo "Built: $APK"
+          cp "$APK" chess.apk
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: chess-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: chess-apk
+          path: chess.apk
