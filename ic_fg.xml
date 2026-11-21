@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- king silhouette, inside the 66dp adaptive-icon safe zone -->
+    <path android:fillColor="#F4EFE0" android:pathData="M51,20h6v7h7v6h-7v6h-6v-6h-7v-6h7z"/>
+    <path android:fillColor="#F4EFE0" android:pathData="M54,40C63,40 68,47 66,55C65,60 62,63 63,68L68,80L40,80L45,68C46,63 43,60 42,55C40,47 45,40 54,40z"/>
+    <path android:fillColor="#4CC9F0" android:pathData="M36,81h36v6h-36z"/>
+</vector>

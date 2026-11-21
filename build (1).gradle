@@ -1,0 +1,39 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.chessoffline.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.chessoffline.game'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the standard debug key so the APK installs directly on a phone.
+            // For Google Play, replace this with your own release keystore.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // Name the output file chess.apk
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "chess.apk"
+        }
+    }
+}
+
+// No third-party dependencies: the game is plain Android + WebView, fully offline.
