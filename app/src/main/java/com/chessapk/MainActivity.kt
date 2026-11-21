@@ -128,7 +128,7 @@ private fun ChessApp() {
                         onLocal = { gameMode = "local"; board = Board(); selected = null; page = "game" },
                         onAi = { gameMode = "ai"; board = Board(); selected = null; page = "game" },
                         onSettings = { page = "settings" },
-                        onCustomize = { page = "customize" }
+                        onCustomize = { page = "customize" }, isAi = gameMode == "ai", difficulty = difficulty, animations = animations, motionTrail = motionTrail, squareSize = squareSize
                     )
                     "settings" -> SettingsScreen(
                         fps = targetFps, onFps = { targetFps = it },
@@ -217,7 +217,7 @@ private fun SettingsScreen(
         Spacer(Modifier.height(18.dp))
         Text("GAMEPLAY", color = Color(0xFF82B1FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Text("AI difficulty: $difficulty", color = Color.White, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
-        Text("Difficulty choices will be used when the offline AI opponent is added. Local two-player mode is available now.", color = muted, fontSize = 12.sp)
+        Text("The offline chess opponent uses legal-move search. Higher levels search deeper and choose stronger moves.", color = muted, fontSize = 12.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 10.dp)) {
             listOf("Easy", "Normal", "Hard", "Expert").forEach { value -> SmallChoice(value, difficulty == value) { onDifficulty(value) } }
         }
@@ -295,7 +295,8 @@ private fun SmallChoice(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun GameScreen(
     board: Board, onBoardChange: (Board) -> Unit, selected: Square?, onSelected: (Square?) -> Unit,
     flipped: Boolean, onFlipped: (Boolean) -> Unit, coordinates: Boolean, gridLines: Boolean, moveHints: Boolean,
-    palette: Pair<Color, Color>, onBack: () -> Unit, onCustomize: () -> Unit
+    palette: Pair<Color, Color>, onBack: () -> Unit, onCustomize: () -> Unit,
+    isAi: Boolean, difficulty: String, animations: Boolean, motionTrail: Boolean, squareSize: Int
 ) {
     var revision by remember { mutableIntStateOf(0) }
     val legalMoves = board.legalMoves()
@@ -319,7 +320,7 @@ private fun GameScreen(
         Spacer(Modifier.height(14.dp))
         Text(if (isAi && board.sideToMove.toString() == "BLACK") "AI THINKING…" else turn, color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         Spacer(Modifier.height(12.dp))
-        Column(Modifier.fillMaxWidth().aspectRatio(1f)) {
+        Column(Modifier.fillMaxWidth().aspectRatio(1f).graphicsLayer { alpha = if (motionTrail) 0.985f else 1f }) {
             val ranks = if (flipped) (0..7).toList() else (7 downTo 0).toList()
             ranks.forEach { rank ->
                 Row(Modifier.weight(1f)) {
@@ -341,7 +342,7 @@ private fun GameScreen(
                                 }
                             } else if (piece != "NONE") onSelected(square)
                         }, contentAlignment = Alignment.Center) {
-                            if (piece != "NONE") Text(pieceSymbols[piece] ?: "", fontSize = 30.sp, color = if (piece.startsWith("WHITE")) Color.White else Color(0xFF111111))
+                            if (piece != "NONE") AnimatedContent(targetState = piece, transitionSpec = { androidx.compose.animation.fadeIn(tween(if (animations) 160 else 0)) togetherWith androidx.compose.animation.fadeOut(tween(if (animations) 100 else 0)) }, label = "piece") { currentPiece ->\n                                Text(pieceSymbols[currentPiece] ?: "", fontSize = 30.sp, color = if (currentPiece.startsWith("WHITE")) Color.White else Color(0xFF111111), modifier = Modifier.graphicsLayer { alpha = if (motionTrail) 0.94f else 1f })\n                            }
                             else if (moveHints && isTarget) Box(Modifier.size(11.dp).background(Color(0x88000000), RoundedCornerShape(50)))
                         }
                     }
@@ -351,7 +352,7 @@ private fun GameScreen(
         if (coordinates) Text(if (flipped) "h   g   f   e   d   c   b   a" else "a   b   c   d   e   f   g   h", color = muted, fontSize = 11.sp)
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { onBoardChange(Board()); onSelected(null); revision++ }, modifier = Modifier.weight(1f)) { Text("New game") }
+            Button(onClick = { board = Board(); onBoardChange(board); onSelected(null); revision++ }, modifier = Modifier.weight(1f)) { Text("New game") }
             OutlinedButton(onClick = { onFlipped(!flipped) }, modifier = Modifier.weight(1f)) { Text("Flip board") }
         }
         Spacer(Modifier.height(8.dp))
