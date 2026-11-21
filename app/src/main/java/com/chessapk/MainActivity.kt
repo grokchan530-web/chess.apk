@@ -69,7 +69,9 @@ private fun ChessApp() {
     var background by remember { mutableIntStateOf(0) }
     var squareSize by remember { mutableIntStateOf(0) }
     var targetFps by remember { mutableIntStateOf(60) }
-    var difficulty by remember { mutableStateOf("Normal") }\n    var gameMode by remember { mutableStateOf("local") }\n    var customBackground by remember { mutableStateOf<String?>(null) }
+    var difficulty by remember { mutableStateOf("Normal") }
+    var gameMode by remember { mutableStateOf("local") }
+    var customBackground by remember { mutableStateOf<String?>(null) }
 
     val boardPalettes = listOf(
         Color(0xFFE8DCC8) to Color(0xFF789477),
@@ -80,7 +82,35 @@ private fun ChessApp() {
         Color(0xFFE8E2D5) to Color(0xFF6E6258)
     )
     val backgrounds = listOf(Color(0xFF101722), Color(0xFF17131F), Color(0xFF14211E), Color(0xFF24201A))
-    val context = LocalContext.current\n    val prefs = remember { context.getSharedPreferences("chess_settings", android.content.Context.MODE_PRIVATE) }\n    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->\n        if (uri != null) {\n            runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }\n            customBackground = uri.toString()\n        }\n    }\n    LaunchedEffect(Unit) {\n        theme = prefs.getInt("theme", 0).coerceIn(0, 5)\n        background = prefs.getInt("background", 0).coerceIn(0, 3)\n        coordinates = prefs.getBoolean("coordinates", true)\n        gridLines = prefs.getBoolean("gridLines", true)\n        moveHints = prefs.getBoolean("moveHints", true)\n        animations = prefs.getBoolean("animations", true)\n        motionTrail = prefs.getBoolean("motionTrail", false)\n        squareSize = prefs.getInt("squareSize", 1).coerceIn(0, 2)\n        targetFps = prefs.getInt("targetFps", 60).coerceIn(60, 120)\n        difficulty = prefs.getString("difficulty", "Normal") ?: "Normal"\n        customBackground = prefs.getString("customBackground", null)\n    }\n    LaunchedEffect(theme, background, coordinates, gridLines, moveHints, animations, motionTrail, squareSize, targetFps, difficulty, customBackground) {\n        prefs.edit().putInt("theme", theme).putInt("background", background)\n            .putBoolean("coordinates", coordinates).putBoolean("gridLines", gridLines)\n            .putBoolean("moveHints", moveHints).putBoolean("animations", animations)\n            .putBoolean("motionTrail", motionTrail).putInt("squareSize", squareSize)\n            .putInt("targetFps", targetFps).putString("difficulty", difficulty)\n            .putString("customBackground", customBackground).apply()\n    }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("chess_settings", android.content.Context.MODE_PRIVATE) }
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            customBackground = uri.toString()
+        }
+    }
+    LaunchedEffect(Unit) {
+        theme = prefs.getInt("theme", 0).coerceIn(0, 5)
+        background = prefs.getInt("background", 0).coerceIn(0, 3)
+        coordinates = prefs.getBoolean("coordinates", true)
+        gridLines = prefs.getBoolean("gridLines", true)
+        moveHints = prefs.getBoolean("moveHints", true)
+        animations = prefs.getBoolean("animations", true)
+        motionTrail = prefs.getBoolean("motionTrail", false)
+        squareSize = prefs.getInt("squareSize", 1).coerceIn(0, 2)
+        targetFps = prefs.getInt("targetFps", 60).coerceIn(60, 120)
+        difficulty = prefs.getString("difficulty", "Normal") ?: "Normal"
+        customBackground = prefs.getString("customBackground", null)
+    }
+    LaunchedEffect(theme, background, coordinates, gridLines, moveHints, animations, motionTrail, squareSize, targetFps, difficulty, customBackground) {
+        prefs.edit().putInt("theme", theme).putInt("background", background)
+            .putBoolean("coordinates", coordinates).putBoolean("gridLines", gridLines)
+            .putBoolean("moveHints", moveHints).putBoolean("animations", animations)
+            .putBoolean("motionTrail", motionTrail).putInt("squareSize", squareSize)
+            .putInt("targetFps", targetFps).putString("difficulty", difficulty)
+            .putString("customBackground", customBackground).apply()
+    }
     LaunchedEffect(targetFps) {
         val activity = context as? Activity
         if (activity != null) {
@@ -95,7 +125,8 @@ private fun ChessApp() {
             AnimatedContent(targetState = page, transitionSpec = { androidx.compose.animation.fadeIn(tween(160)) togetherWith androidx.compose.animation.fadeOut(tween(120)) }, label = "pages") { screen ->
                 when (screen) {
                     "home" -> HomeScreen(
-                        onLocal = { gameMode = "local"; board = Board(); selected = null; page = "game" },\n                        onAi = { gameMode = "ai"; board = Board(); selected = null; page = "game" },
+                        onLocal = { gameMode = "local"; board = Board(); selected = null; page = "game" },
+                        onAi = { gameMode = "ai"; board = Board(); selected = null; page = "game" },
                         onSettings = { page = "settings" },
                         onCustomize = { page = "customize" }
                     )
@@ -108,7 +139,8 @@ private fun ChessApp() {
                     )
                     "customize" -> CustomizeScreen(
                         theme = theme, onTheme = { theme = it },
-                        background = background, onBackground = { background = it },\n                        customBackground = customBackground, onPickBackground = { imagePicker.launch(arrayOf("image/*")) }, onClearBackground = { customBackground = null },
+                        background = background, onBackground = { background = it },
+                        customBackground = customBackground, onPickBackground = { imagePicker.launch(arrayOf("image/*")) }, onClearBackground = { customBackground = null },
                         coordinates = coordinates, onCoordinates = { coordinates = it },
                         gridLines = gridLines, onGridLines = { gridLines = it },
                         moveHints = moveHints, onMoveHints = { moveHints = it },
@@ -137,7 +169,9 @@ private fun HomeScreen(onLocal: () -> Unit, onAi: () -> Unit, onSettings: () -> 
         Text("CHESS", fontSize = 34.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = 5.sp)
         Text("THINK. MOVE. WIN.", color = muted, fontSize = 12.sp, letterSpacing = 3.sp)
         Spacer(Modifier.weight(1f))
-        MenuButton("LOCAL 2 PLAYERS", "Two people · One phone", onLocal)\n        Spacer(Modifier.height(12.dp))\n        MenuButton("PLAY VS AI", "Offline computer opponent · 4 levels", onAi)
+        MenuButton("LOCAL 2 PLAYERS", "Two people · One phone", onLocal)
+        Spacer(Modifier.height(12.dp))
+        MenuButton("PLAY VS AI", "Offline computer opponent · 4 levels", onAi)
         Spacer(Modifier.height(12.dp))
         MenuButton("CUSTOMIZE", "Boards, colors and layout", onCustomize)
         Spacer(Modifier.height(12.dp))
@@ -194,7 +228,8 @@ private fun SettingsScreen(
 
 @Composable
 private fun CustomizeScreen(
-    theme: Int, onTheme: (Int) -> Unit, background: Int, onBackground: (Int) -> Unit,\n    customBackground: String?, onPickBackground: () -> Unit, onClearBackground: () -> Unit,
+    theme: Int, onTheme: (Int) -> Unit, background: Int, onBackground: (Int) -> Unit,
+    customBackground: String?, onPickBackground: () -> Unit, onClearBackground: () -> Unit,
     coordinates: Boolean, onCoordinates: (Boolean) -> Unit, gridLines: Boolean, onGridLines: (Boolean) -> Unit,
     moveHints: Boolean, onMoveHints: (Boolean) -> Unit, squareSize: Int, onSquareSize: (Int) -> Unit,
     onBack: () -> Unit
@@ -209,7 +244,11 @@ private fun CustomizeScreen(
                 Box(Modifier.size(42.dp).background(color, RoundedCornerShape(10.dp)).border(if (theme == i) 3.dp else 1.dp, if (theme == i) Color.White else muted, RoundedCornerShape(10.dp)).clickable { onTheme(i) })
             }
         }
-        Text("APP BACKGROUND", color = Color(0xFF82B1FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)\n        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {\n            OutlinedButton(onClick = onPickBackground) { Text("Choose image") }\n            if (customBackground != null) OutlinedButton(onClick = onClearBackground) { Text("Remove image") }\n        }
+        Text("APP BACKGROUND", color = Color(0xFF82B1FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+            OutlinedButton(onClick = onPickBackground) { Text("Choose image") }
+            if (customBackground != null) OutlinedButton(onClick = onClearBackground) { Text("Remove image") }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 12.dp)) {
             bg.forEachIndexed { i, color ->
                 Box(Modifier.size(42.dp).background(color, RoundedCornerShape(10.dp)).border(if (background == i) 3.dp else 1.dp, if (background == i) Color.White else muted, RoundedCornerShape(10.dp)).clickable { onBackground(i) })
@@ -259,7 +298,15 @@ private fun GameScreen(
     palette: Pair<Color, Color>, onBack: () -> Unit, onCustomize: () -> Unit
 ) {
     var revision by remember { mutableIntStateOf(0) }
-    val legalMoves = board.legalMoves()\n    LaunchedEffect(revision, isAi) {\n        if (isAi && board.sideToMove.toString() == "BLACK" && legalMoves.isNotEmpty()) {\n            delay(180)\n            val snapshot = board.clone()\n            val aiMove = withContext(Dispatchers.Default) { AiEngine.chooseMove(snapshot, difficulty) }\n            if (aiMove != null) { board.doMove(aiMove); revision++; onBoardChange(board.clone()); onSelected(null) }\n        }\n    }
+    val legalMoves = board.legalMoves()
+    LaunchedEffect(revision, isAi) {
+        if (isAi && board.sideToMove.toString() == "BLACK" && legalMoves.isNotEmpty()) {
+            delay(180)
+            val snapshot = board.clone()
+            val aiMove = withContext(Dispatchers.Default) { AiEngine.chooseMove(snapshot, difficulty) }
+            if (aiMove != null) { board.doMove(aiMove); revision++; onBoardChange(board.clone()); onSelected(null) }
+        }
+    }
     val turn = if (board.sideToMove.toString() == "WHITE") "WHITE TO MOVE" else "BLACK TO MOVE"
     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
