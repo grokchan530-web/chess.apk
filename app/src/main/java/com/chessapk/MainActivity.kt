@@ -10,12 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.ImageBitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -131,7 +126,7 @@ private fun ChessApp() {
                         onLocal = { gameMode = "local"; board = Board(); selected = null; page = "game" },
                         onAi = { gameMode = "ai"; board = Board(); selected = null; page = "game" },
                         onSettings = { page = "settings" },
-                        onCustomize = { page = "customize" }, isAi = gameMode == "ai", difficulty = difficulty, animations = animations, motionTrail = motionTrail, squareSize = squareSize
+                        onCustomize = { page = "customize" }
                     )
                     "settings" -> SettingsScreen(
                         fps = targetFps, onFps = { targetFps = it },
@@ -156,7 +151,7 @@ private fun ChessApp() {
                         flipped = flipped, onFlipped = { flipped = it },
                         coordinates = coordinates, gridLines = gridLines, moveHints = moveHints,
                         palette = boardPalettes[theme], onBack = { page = "home" },
-                        onCustomize = { page = "customize" }
+                        onCustomize = { page = "customize" }, isAi = gameMode == "ai", difficulty = difficulty, animations = animations, motionTrail = motionTrail, squareSize = squareSize
                     )
                 }
             }
@@ -336,11 +331,12 @@ private fun GameScreen(
                         val isTarget = selected != null && legalMoves.any { it.from == selected && it.to == square }
                         val squareColor = if (isSelected) Color(0xFFE9C65B) else if ((file + rank) % 2 == 0) palette.first else palette.second
                         Box(Modifier.weight(1f).fillMaxHeight().padding(if (squareSize == 0) 0.dp else if (squareSize == 1) 0.5.dp else 1.dp).background(squareColor).then(if (gridLines) Modifier.border(if (squareSize == 2) 1.dp else 0.5.dp, Color(0x55000000)) else Modifier).clickable {
+                            if (isAi && board.sideToMove.toString() == "BLACK") return@clickable
                             val from = selected
                             if (from != null) {
                                 val move = legalMoves.firstOrNull { it.from == from && it.to == square }
                                 if (move != null) {
-                                    board.doMove(move); revision++; onBoardChange(board); onSelected(null)
+                                    board.doMove(move); revision++; onBoardChange(board.clone()); onSelected(null)
                                 } else {
                                     onSelected(if (piece != "NONE") square else null)
                                 }
@@ -358,7 +354,7 @@ private fun GameScreen(
         if (coordinates) Text(if (flipped) "h   g   f   e   d   c   b   a" else "a   b   c   d   e   f   g   h", color = muted, fontSize = 11.sp)
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { board = Board(); onBoardChange(board); onSelected(null); revision++ }, modifier = Modifier.weight(1f)) { Text("New game") }
+            Button(onClick = { val fresh = Board(); onBoardChange(fresh); onSelected(null); revision++ }, modifier = Modifier.weight(1f)) { Text("New game") }
             OutlinedButton(onClick = { onFlipped(!flipped) }, modifier = Modifier.weight(1f)) { Text("Flip board") }
         }
         Spacer(Modifier.height(8.dp))
