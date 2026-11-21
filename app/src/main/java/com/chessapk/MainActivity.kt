@@ -30,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -122,7 +123,9 @@ private fun ChessApp() {
 
     MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF72A7FF), background = backgrounds[background], surface = panel)) {
         Surface(Modifier.fillMaxSize(), color = backgrounds[background]) {
-            AnimatedContent(targetState = page, transitionSpec = { androidx.compose.animation.fadeIn(tween(160)) togetherWith androidx.compose.animation.fadeOut(tween(120)) }, label = "pages") { screen ->
+            Box(Modifier.fillMaxSize()) {
+                if (customBackground != null) AsyncImage(model = customBackground, contentDescription = "Custom background", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                AnimatedContent(targetState = page, transitionSpec = { androidx.compose.animation.fadeIn(tween(160)) togetherWith androidx.compose.animation.fadeOut(tween(120)) }, label = "pages") { screen ->
                 when (screen) {
                     "home" -> HomeScreen(
                         onLocal = { gameMode = "local"; board = Board(); selected = null; page = "game" },
@@ -156,6 +159,7 @@ private fun ChessApp() {
                         onCustomize = { page = "customize" }
                     )
                 }
+            }
             }
         }
     }
@@ -342,7 +346,9 @@ private fun GameScreen(
                                 }
                             } else if (piece != "NONE") onSelected(square)
                         }, contentAlignment = Alignment.Center) {
-                            if (piece != "NONE") AnimatedContent(targetState = piece, transitionSpec = { androidx.compose.animation.fadeIn(tween(if (animations) 160 else 0)) togetherWith androidx.compose.animation.fadeOut(tween(if (animations) 100 else 0)) }, label = "piece") { currentPiece ->\n                                Text(pieceSymbols[currentPiece] ?: "", fontSize = 30.sp, color = if (currentPiece.startsWith("WHITE")) Color.White else Color(0xFF111111), modifier = Modifier.graphicsLayer { alpha = if (motionTrail) 0.94f else 1f })\n                            }
+                            if (piece != "NONE") AnimatedContent(targetState = piece, transitionSpec = { androidx.compose.animation.fadeIn(tween(if (animations) 160 else 0)) togetherWith androidx.compose.animation.fadeOut(tween(if (animations) 100 else 0)) }, label = "piece") { currentPiece ->
+                                Text(pieceSymbols[currentPiece] ?: "", fontSize = 30.sp, color = if (currentPiece.startsWith("WHITE")) Color.White else Color(0xFF111111), modifier = Modifier.graphicsLayer { alpha = if (motionTrail) 0.94f else 1f })
+                            }
                             else if (moveHints && isTarget) Box(Modifier.size(11.dp).background(Color(0x88000000), RoundedCornerShape(50)))
                         }
                     }
