@@ -2,6 +2,7 @@ package com.chessapk
 
 import android.app.Activity
 import android.os.Bundle
+import android.os.Build
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -346,7 +347,7 @@ private fun GameScreen(
                             if (piece != "NONE") AnimatedContent(targetState = piece, transitionSpec = { androidx.compose.animation.fadeIn(tween(if (animations) 160 else 0)) togetherWith androidx.compose.animation.fadeOut(tween(if (animations) 100 else 0)) }, label = "piece") { currentPiece ->
                                 Text(pieceSymbols[currentPiece] ?: "", fontSize = 30.sp, color = if (currentPiece.startsWith("WHITE")) Color.White else Color(0xFF111111), modifier = Modifier.graphicsLayer {
                                     alpha = if (motionTrail) 0.94f else 1f
-                                    renderEffect = if (motionTrail && animations) BlurEffect(1.2f, 1.2f) else null
+                                    renderEffect = if (motionTrail && animations && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) BlurEffect(1.2f, 1.2f) else null
                                 })
                             }
                             else if (moveHints && isTarget) Box(Modifier.size(11.dp).background(Color(0x88000000), RoundedCornerShape(50)))
