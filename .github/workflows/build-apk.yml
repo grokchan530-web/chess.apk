@@ -5,48 +5,52 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unpack the project
-        run: unzip -q chess-project.zip && ls chess
+      - name: Unpack and test
+        id: unpack
+        run: |
+          {
+            unzip -q chess-project.zip
+            ls chess
+            cd chess
+            node tests/perft.js
+            node tests/ai.js
+            node build.js
+          } 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Test chess engine
-        working-directory: chess
-        run: node tests/perft.js && node tests/ai.js
-
-      - name: Bundle the game into the Android assets
-        working-directory: chess
-        run: node build.js
-
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
+        id: java
         with:
           distribution: temurin
           java-version: 17
 
       - uses: android-actions/setup-android@v3
+        id: android
 
-      - name: Make sure a debug keystore exists
+      - name: Build APK
+        id: gradle
+        working-directory: chess/android
         run: |
           mkdir -p ~/.android
           [ -f ~/.android/debug.keystore ] || keytool -genkey -v -keystore ~/.android/debug.keystore \
             -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
             -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-
-      - name: Build APK
-        working-directory: chess/android
-        run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleRelease
+          ./gradlew --no-daemon assembleRelease 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
       - name: Collect chess.apk
+        id: collect
         run: |
           APK=$(find chess/android/app/build/outputs/apk -name '*.apk' | head -n 1)
           echo "Built: $APK"
@@ -56,3 +60,23 @@ jobs:
         with:
           name: chess-apk
           path: chess.apk
+
+      - name: Save build report to branch build-log
+        if: always()
+        run: |
+          {
+            echo "=== STEP RESULTS ==="
+            echo "unpack/test: ${{ steps.unpack.outcome }}"
+            echo "setup-java:  ${{ steps.java.outcome }}"
+            echo "setup-android: ${{ steps.android.outcome }}"
+            echo "gradle:      ${{ steps.gradle.outcome }}"
+            echo "collect:     ${{ steps.collect.outcome }}"
+          } >> build.log
+          cp build.log /tmp/build.log
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git switch --orphan build-log
+          cp /tmp/build.log build.log
+          git add build.log
+          git commit -q -m "Build report"
+          git push -f origin build-log
