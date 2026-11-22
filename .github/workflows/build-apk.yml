@@ -24,8 +24,8 @@ jobs:
             unzip -q chess-project.zip
             ls chess
             cd chess
-            node tests/perft.js
-            node tests/ai.js
+            node tests/perft.js | tail -1
+            node tests/ai.js | tail -1
             node build.js
           } 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
@@ -35,19 +35,24 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-        id: android
-
       - name: Build APK
         id: gradle
         working-directory: chess/android
         run: |
-          mkdir -p ~/.android
-          [ -f ~/.android/debug.keystore ] || keytool -genkey -v -keystore ~/.android/debug.keystore \
-            -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
-            -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          chmod +x gradlew
-          ./gradlew --no-daemon assembleRelease 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
+          {
+            SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            echo "Android SDK at: $SDK"
+            ls "$SDK" || true
+            ls "$SDK/platforms" || true
+            ls "$SDK/build-tools" || true
+            echo "sdk.dir=$SDK" > local.properties
+            mkdir -p ~/.android
+            [ -f ~/.android/debug.keystore ] || keytool -genkey -v -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
+              -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            chmod +x gradlew
+            ./gradlew --no-daemon assembleDebug
+          } 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
       - name: Collect chess.apk
         id: collect
@@ -68,7 +73,6 @@ jobs:
             echo "=== STEP RESULTS ==="
             echo "unpack/test: ${{ steps.unpack.outcome }}"
             echo "setup-java:  ${{ steps.java.outcome }}"
-            echo "setup-android: ${{ steps.android.outcome }}"
             echo "gradle:      ${{ steps.gradle.outcome }}"
             echo "collect:     ${{ steps.collect.outcome }}"
           } >> build.log
